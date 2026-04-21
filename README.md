@@ -1,6 +1,6 @@
 ---
 title: Heart Disease Detection
-emoji: stethoscope
+emoji: "🫀"
 colorFrom: blue
 colorTo: red
 sdk: docker
