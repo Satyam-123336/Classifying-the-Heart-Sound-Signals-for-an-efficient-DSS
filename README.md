@@ -1,3 +1,13 @@
+---
+title: Heart Disease Detection
+emoji: stethoscope
+colorFrom: blue
+colorTo: red
+sdk: docker
+app_file: app.py
+pinned: false
+---
+
 # Heart Health DSS - Hugging Face Space API
 
 This folder is a Docker Space template that hosts your heartbeat model as a remote API.
