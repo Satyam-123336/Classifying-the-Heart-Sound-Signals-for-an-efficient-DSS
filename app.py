@@ -58,6 +58,7 @@ class RemoteHeartDSSService:
         self.pca_meta_path = self.artifacts_dir / "results" / "pca_cached_meta.json"
         self.threshold_cache_path = self.artifacts_dir / "results" / "decision_threshold_cached.json"
         self.invert_score = False
+        self.positive_label = "normal"
 
         self.models, self.model_order, self.weights = self._load_models_and_weights()
 
@@ -90,6 +91,18 @@ class RemoteHeartDSSService:
         if self.decision_threshold is None:
             self.decision_threshold, self.invert_score = self._calibrate_decision_threshold()
             self._save_cached_threshold(self.decision_threshold, self.invert_score)
+
+        self.positive_label = self._resolve_positive_label()
+
+    def _resolve_positive_label(self) -> str:
+        env_value = os.environ.get("HEARTDSS_POSITIVE_LABEL", "").strip().lower()
+        if env_value in {"normal", "abnormal"}:
+            return env_value
+
+        # Heuristic fallback: very low threshold usually indicates class-1 is the opposite semantic.
+        if float(self.decision_threshold) < 0.3:
+            return "abnormal"
+        return "normal"
 
     @staticmethod
     def _safe_mtime(path: Path) -> float:
@@ -345,9 +358,15 @@ class RemoteHeartDSSService:
         raw_score = min(max(raw_score, 0.0), 1.0)
         score = 1.0 - raw_score if self.invert_score else raw_score
 
-        label = "Normal" if score >= self.decision_threshold else "Abnormal"
-        probability_normal = score
-        probability_abnormal = 1.0 - probability_normal
+        if self.positive_label == "abnormal":
+            probability_abnormal = score
+            probability_normal = 1.0 - probability_abnormal
+            label = "Abnormal" if probability_abnormal >= self.decision_threshold else "Normal"
+        else:
+            probability_normal = score
+            probability_abnormal = 1.0 - probability_normal
+            label = "Normal" if probability_normal >= self.decision_threshold else "Abnormal"
+
         confidence = probability_normal if label == "Normal" else probability_abnormal
 
         margin = abs(score - self.decision_threshold)
