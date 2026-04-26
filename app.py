@@ -403,6 +403,7 @@ class RemoteHeartDSSService:
 app = FastAPI(title="Heart Health DSS Remote API", version="1.0.0")
 service: RemoteHeartDSSService | None = None
 startup_error: str | None = None
+APP_BUILD_TAG = "2026-04-26-e9c36f4"
 
 
 @app.on_event("startup")
@@ -418,10 +419,22 @@ def startup_event() -> None:
 
 @app.get("/health")
 def health() -> dict:
+    runtime = {
+        "build": APP_BUILD_TAG,
+        "decision_threshold": None,
+        "invert_score": None,
+        "positive_label": None,
+    }
+    if service is not None:
+        runtime["decision_threshold"] = float(service.decision_threshold)
+        runtime["invert_score"] = bool(getattr(service, "invert_score", False))
+        runtime["positive_label"] = str(getattr(service, "positive_label", "normal"))
+
     return {
         "status": "ok" if service is not None else "error",
         "model_loaded": service is not None,
         "error": startup_error,
+        "runtime": runtime,
     }
 
 
