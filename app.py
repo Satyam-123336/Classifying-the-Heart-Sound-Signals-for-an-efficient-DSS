@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import warnings
 from pathlib import Path
 
 import cv2
@@ -14,6 +15,7 @@ import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from sklearn.decomposition import IncrementalPCA
+from sklearn.exceptions import InconsistentVersionWarning
 from tensorflow.keras.applications import MobileNetV2, VGG19
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input as preprocess_mobilenet
 from tensorflow.keras.applications.vgg19 import preprocess_input as preprocess_vgg
@@ -58,7 +60,7 @@ class RemoteHeartDSSService:
         self.pca_meta_path = self.artifacts_dir / "results" / "pca_cached_meta.json"
         self.threshold_cache_path = self.artifacts_dir / "results" / "decision_threshold_cached.json"
         self.invert_score = False
-        self.positive_label = "normal"
+        self.class1_indices: dict[str, int] = {}
 
         self.models, self.model_order, self.weights = self._load_models_and_weights()
 
@@ -92,18 +94,6 @@ class RemoteHeartDSSService:
             self.decision_threshold, self.invert_score = self._calibrate_decision_threshold()
             self._save_cached_threshold(self.decision_threshold, self.invert_score)
 
-        self.positive_label = self._resolve_positive_label()
-
-    def _resolve_positive_label(self) -> str:
-        env_value = os.environ.get("HEARTDSS_POSITIVE_LABEL", "").strip().lower()
-        if env_value in {"normal", "abnormal"}:
-            return env_value
-
-        # Heuristic fallback: very low threshold usually indicates class-1 is the opposite semantic.
-        if float(self.decision_threshold) < 0.3:
-            return "abnormal"
-        return "normal"
-
     @staticmethod
     def _safe_mtime(path: Path) -> float:
         try:
@@ -130,7 +120,9 @@ class RemoteHeartDSSService:
         for name, filename in MODEL_FILES.items():
             model_path = self.models_dir / filename
             if model_path.exists():
-                models[name] = joblib.load(model_path)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("error", InconsistentVersionWarning)
+                    models[name] = joblib.load(model_path)
 
         if not models:
             raise FileNotFoundError(f"No model files found in {self.models_dir}")
@@ -151,6 +143,21 @@ class RemoteHeartDSSService:
             weights = np.ones(len(model_order), dtype=np.float64)
 
         weights = weights / np.sum(weights)
+
+        self.class1_indices = {}
+        for name in model_order:
+            classes = getattr(models[name], "classes_", None)
+            if classes is None:
+                self.class1_indices[name] = 1
+                continue
+
+            classes_arr = np.asarray(classes)
+            idx = np.where(classes_arr == 1)[0]
+            if idx.size > 0:
+                self.class1_indices[name] = int(idx[0])
+            else:
+                self.class1_indices[name] = min(1, max(len(classes_arr) - 1, 0))
+
         return models, model_order, weights
 
     def _pca_meta(self) -> dict:
@@ -164,11 +171,19 @@ class RemoteHeartDSSService:
         return {
             "expected_dim": int(self.expected_dim),
             "build_tag": APP_BUILD_TAG,
-            "models_dir_mtime": self._safe_mtime(self.models_dir),
-            "weights_mtime": self._safe_mtime(self.ensemble_weights_path),
-            "reduced_feature_cache_mtime": self._safe_mtime(self.reduced_feature_cache),
-            "label_cache_mtime": self._safe_mtime(self.label_cache),
         }
+
+    def _threshold_meta_is_compatible(self, cached_meta: object) -> bool:
+        if not isinstance(cached_meta, dict):
+            return False
+
+        try:
+            cached_expected_dim = int(cached_meta.get("expected_dim"))
+        except Exception:
+            return False
+
+        cached_build_tag = str(cached_meta.get("build_tag", "")).strip()
+        return cached_expected_dim == int(self.expected_dim) and cached_build_tag == APP_BUILD_TAG
 
     def _load_cached_pca(self) -> IncrementalPCA | None:
         if not self.pca_cache_path.exists():
@@ -206,7 +221,7 @@ class RemoteHeartDSSService:
 
         try:
             payload = json.loads(self.threshold_cache_path.read_text(encoding="utf-8"))
-            if payload.get("meta", {}) != self._threshold_meta():
+            if not self._threshold_meta_is_compatible(payload.get("meta", {})):
                 return None, False
             if "invert_score" not in payload:
                 return None, False
@@ -262,10 +277,14 @@ class RemoteHeartDSSService:
 
         return np.hstack([vgg_feat, mobile_feat]).astype(np.float32, copy=False)
 
-    @staticmethod
-    def _probability_scores(model, x: np.ndarray) -> np.ndarray:
+    def _probability_scores(self, model_name: str, model, x: np.ndarray) -> np.ndarray:
         if hasattr(model, "predict_proba"):
-            return model.predict_proba(x)[:, 1].astype(np.float64)
+            proba = model.predict_proba(x)
+            if proba.ndim == 2 and proba.shape[1] > 1:
+                col = int(self.class1_indices.get(model_name, 1))
+                col = max(0, min(col, proba.shape[1] - 1))
+                return proba[:, col].astype(np.float64)
+            return proba.reshape(-1).astype(np.float64)
 
         if hasattr(model, "decision_function"):
             raw = model.decision_function(x).astype(np.float64)
@@ -278,7 +297,7 @@ class RemoteHeartDSSService:
         return model.predict(x).astype(np.float64)
 
     def _ensemble_score(self, x: np.ndarray) -> np.ndarray:
-        per_model = [self._probability_scores(self.models[name], x) for name in self.model_order]
+        per_model = [self._probability_scores(name, self.models[name], x) for name in self.model_order]
         proba_matrix = np.column_stack(per_model)
         return proba_matrix @ self.weights
 
@@ -343,8 +362,17 @@ class RemoteHeartDSSService:
         inv_thr, inv_bal, inv_gap = select_threshold(inv_scores)
 
         if (inv_bal > direct_bal) or (abs(inv_bal - direct_bal) < 1e-12 and inv_gap < direct_gap):
-            return inv_thr, True
-        return direct_thr, False
+            selected_thr = inv_thr
+            selected_invert = True
+        else:
+            selected_thr = direct_thr
+            selected_invert = False
+
+        prevalence_target = float(np.mean(y_true == 1))
+        if 0.4 <= prevalence_target <= 0.6 and not (0.3 <= selected_thr <= 0.7):
+            return 0.5, False
+
+        return selected_thr, selected_invert
 
     def predict_from_audio_bytes(self, audio_bytes: bytes) -> PredictionResponse:
         waveform, sr = librosa.load(io.BytesIO(audio_bytes), sr=None, mono=True)
@@ -359,14 +387,9 @@ class RemoteHeartDSSService:
         raw_score = min(max(raw_score, 0.0), 1.0)
         score = 1.0 - raw_score if self.invert_score else raw_score
 
-        if self.positive_label == "abnormal":
-            probability_abnormal = score
-            probability_normal = 1.0 - probability_abnormal
-            label = "Abnormal" if probability_abnormal >= self.decision_threshold else "Normal"
-        else:
-            probability_normal = score
-            probability_abnormal = 1.0 - probability_normal
-            label = "Normal" if probability_normal >= self.decision_threshold else "Abnormal"
+        probability_normal = score
+        probability_abnormal = 1.0 - probability_normal
+        label = "Normal" if probability_normal >= self.decision_threshold else "Abnormal"
 
         confidence = probability_normal if label == "Normal" else probability_abnormal
 
@@ -380,11 +403,11 @@ class RemoteHeartDSSService:
 
         if label == "Abnormal":
             explanation = (
-                f"Abnormal because Normal score {score:.2%} is below threshold {self.decision_threshold:.2%}."
+                f"Abnormal because Normal score {probability_normal:.2%} is below threshold {self.decision_threshold:.2%}."
             )
         else:
             explanation = (
-                f"Normal because Normal score {score:.2%} is at or above threshold {self.decision_threshold:.2%}."
+                f"Normal because Normal score {probability_normal:.2%} is at or above threshold {self.decision_threshold:.2%}."
             )
 
         return PredictionResponse(
@@ -404,7 +427,7 @@ class RemoteHeartDSSService:
 app = FastAPI(title="Heart Health DSS Remote API", version="1.0.0")
 service: RemoteHeartDSSService | None = None
 startup_error: str | None = None
-APP_BUILD_TAG = "2026-04-26-forced-redeploy-20260426-1833"
+APP_BUILD_TAG = "2026-04-26-heart-disease-cache-sync"
 
 
 @app.on_event("startup")
@@ -424,12 +447,10 @@ def health() -> dict:
         "build": APP_BUILD_TAG,
         "decision_threshold": None,
         "invert_score": None,
-        "positive_label": None,
     }
     if service is not None:
         runtime["decision_threshold"] = float(service.decision_threshold)
         runtime["invert_score"] = bool(getattr(service, "invert_score", False))
-        runtime["positive_label"] = str(getattr(service, "positive_label", "normal"))
 
     return {
         "status": "ok" if service is not None else "error",
