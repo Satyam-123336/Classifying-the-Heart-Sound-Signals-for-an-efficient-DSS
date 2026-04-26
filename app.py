@@ -52,7 +52,6 @@ class RemoteHeartDSSService:
         self.artifacts_dir = Path(os.environ.get("HF_ARTIFACTS_DIR", "./artifacts")).resolve()
         self.models_dir = self.artifacts_dir / "saved_models"
         self.ensemble_weights_path = self.artifacts_dir / "results" / "ensemble_weights.json"
-        self.raw_feature_cache = self.artifacts_dir / "results" / "features_raw.npy"
         self.reduced_feature_cache = self.artifacts_dir / "results" / "features_reduced.npy"
         self.label_cache = self.artifacts_dir / "results" / "labels.npy"
         self.pca_cache_path = self.artifacts_dir / "results" / "pca_cached.joblib"
@@ -70,9 +69,6 @@ class RemoteHeartDSSService:
             if dim != self.expected_dim:
                 raise ValueError(f"Model feature dimension mismatch: {name} has {dim}, expected {self.expected_dim}")
 
-        if not self.raw_feature_cache.exists():
-            raise FileNotFoundError(f"Missing raw feature cache: {self.raw_feature_cache}")
-
         vgg_base = VGG19(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
         self.vgg_model = Model(inputs=vgg_base.input, outputs=vgg_base.output)
         self.vgg_model.trainable = False
@@ -83,8 +79,9 @@ class RemoteHeartDSSService:
 
         self.pca = self._load_cached_pca()
         if self.pca is None:
-            self.pca = self._fit_pca_from_cached_raw_features()
-            self._save_cached_pca(self.pca)
+            raise FileNotFoundError(
+                f"Missing PCA cache. Provide {self.pca_cache_path} before starting the service."
+            )
 
         self.decision_threshold = self._load_cached_threshold()
         if self.decision_threshold is None:
@@ -97,6 +94,20 @@ class RemoteHeartDSSService:
             return float(path.stat().st_mtime)
         except Exception:
             return 0.0
+
+    def _pca_meta_is_compatible(self, cached_meta: object) -> bool:
+        if not isinstance(cached_meta, dict):
+            return False
+
+        expected_dim = cached_meta.get("expected_dim")
+        if expected_dim is not None:
+            try:
+                if int(expected_dim) != int(self.expected_dim):
+                    return False
+            except Exception:
+                return False
+
+        return True
 
     def _load_models_and_weights(self):
         models = {}
@@ -129,9 +140,8 @@ class RemoteHeartDSSService:
     def _pca_meta(self) -> dict:
         return {
             "expected_dim": int(self.expected_dim),
-            "raw_feature_cache_mtime": self._safe_mtime(self.raw_feature_cache),
-            "models_dir_mtime": self._safe_mtime(self.models_dir),
-            "weights_mtime": self._safe_mtime(self.ensemble_weights_path),
+            "reduced_feature_cache_mtime": self._safe_mtime(self.reduced_feature_cache),
+            "results_dir_mtime": self._safe_mtime(self.artifacts_dir / "results"),
         }
 
     def _threshold_meta(self) -> dict:
@@ -144,18 +154,23 @@ class RemoteHeartDSSService:
         }
 
     def _load_cached_pca(self) -> IncrementalPCA | None:
-        if not self.pca_cache_path.exists() or not self.pca_meta_path.exists():
+        if not self.pca_cache_path.exists():
             return None
 
         try:
-            cached_meta = json.loads(self.pca_meta_path.read_text(encoding="utf-8"))
-            if cached_meta != self._pca_meta():
-                return None
-
             pca = joblib.load(self.pca_cache_path)
             n_components = int(getattr(pca, "n_components_", 0))
             if n_components != int(self.expected_dim):
                 return None
+
+            if self.pca_meta_path.exists():
+                try:
+                    cached_meta = json.loads(self.pca_meta_path.read_text(encoding="utf-8"))
+                except Exception:
+                    return None
+                if not self._pca_meta_is_compatible(cached_meta):
+                    return None
+
             return pca
         except Exception:
             return None
@@ -190,23 +205,6 @@ class RemoteHeartDSSService:
             self.threshold_cache_path.write_text(json.dumps(payload), encoding="utf-8")
         except Exception:
             pass
-
-    def _fit_pca_from_cached_raw_features(self) -> IncrementalPCA:
-        raw_features = np.load(self.raw_feature_cache, mmap_mode="r")
-
-        n_samples = raw_features.shape[0]
-        effective_batch = min(n_samples, max(PCA_BATCH_SIZE, self.expected_dim))
-
-        if self.expected_dim > effective_batch:
-            raise ValueError(
-                f"Cannot fit IncrementalPCA with n_components={self.expected_dim} and batch={effective_batch}."
-            )
-
-        pca = IncrementalPCA(n_components=self.expected_dim)
-        for i in range(0, n_samples, effective_batch):
-            batch = raw_features[i : i + effective_batch].astype(np.float32, copy=False)
-            pca.partial_fit(batch)
-        return pca
 
     @staticmethod
     def _render_chromagram_to_rgb(waveform: np.ndarray, sr: int) -> np.ndarray:
@@ -268,11 +266,10 @@ class RemoteHeartDSSService:
         if y_true.ndim != 1 or y_true.size == 0 or len(np.unique(y_true)) < 2:
             return 0.5
 
-        if self.reduced_feature_cache.exists():
-            x = np.load(self.reduced_feature_cache)
-        else:
-            raw = np.load(self.raw_feature_cache, mmap_mode="r")
-            x = self.pca.transform(np.asarray(raw, dtype=np.float32))
+        if not self.reduced_feature_cache.exists():
+            return 0.5
+
+        x = np.load(self.reduced_feature_cache)
 
         if x.shape[0] != y_true.shape[0]:
             return 0.5
