@@ -404,7 +404,7 @@ class RemoteHeartDSSService:
 app = FastAPI(title="Heart Health DSS Remote API", version="1.0.0")
 service: RemoteHeartDSSService | None = None
 startup_error: str | None = None
-APP_BUILD_TAG = "2026-04-26-e3b6132-threshold-52435974"
+APP_BUILD_TAG = "2026-04-26-forced-redeploy-20260426-1833"
 
 
 @app.on_event("startup")
