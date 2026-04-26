@@ -163,6 +163,7 @@ class RemoteHeartDSSService:
     def _threshold_meta(self) -> dict:
         return {
             "expected_dim": int(self.expected_dim),
+            "build_tag": APP_BUILD_TAG,
             "models_dir_mtime": self._safe_mtime(self.models_dir),
             "weights_mtime": self._safe_mtime(self.ensemble_weights_path),
             "reduced_feature_cache_mtime": self._safe_mtime(self.reduced_feature_cache),
