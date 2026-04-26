@@ -286,9 +286,15 @@ class RemoteHeartDSSService:
 
         scores = self._ensemble_score(x)
 
-        def best_threshold(for_scores: np.ndarray) -> tuple[float, float]:
+        def select_threshold(for_scores: np.ndarray) -> tuple[float, float, float]:
             local_best_thr = 0.5
             local_best_bal = -1.0
+            local_best_rate = 1.0
+            prevalence_target = float(np.mean(y_true == 1))
+
+            best_prev_thr = 0.5
+            best_prev_gap = 1e9
+            best_prev_bal = -1.0
             candidates = np.unique(np.quantile(for_scores, np.linspace(0.05, 0.95, 181)))
             for thr in candidates:
                 pred = (for_scores >= thr).astype(int)
@@ -300,17 +306,29 @@ class RemoteHeartDSSService:
                 sens = tp / (tp + fn) if (tp + fn) > 0 else 0.0
                 spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
                 bal = 0.5 * (sens + spec)
+                pred_rate = float(np.mean(pred == 1))
+                prev_gap = abs(pred_rate - prevalence_target)
 
                 if bal > local_best_bal:
                     local_best_bal = bal
                     local_best_thr = float(thr)
-            return local_best_thr, local_best_bal
+                    local_best_rate = pred_rate
 
-        direct_thr, direct_bal = best_threshold(scores)
+                if (prev_gap < best_prev_gap) or (abs(prev_gap - best_prev_gap) < 1e-12 and bal > best_prev_bal):
+                    best_prev_gap = prev_gap
+                    best_prev_thr = float(thr)
+                    best_prev_bal = bal
+
+            # Prevent degenerate all-one/all-zero behavior from dominating calibration.
+            if local_best_rate < 0.2 or local_best_rate > 0.8:
+                return best_prev_thr, best_prev_bal, best_prev_gap
+            return local_best_thr, local_best_bal, abs(local_best_rate - prevalence_target)
+
+        direct_thr, direct_bal, direct_gap = select_threshold(scores)
         inv_scores = 1.0 - scores
-        inv_thr, inv_bal = best_threshold(inv_scores)
+        inv_thr, inv_bal, inv_gap = select_threshold(inv_scores)
 
-        if inv_bal > direct_bal:
+        if (inv_bal > direct_bal) or (abs(inv_bal - direct_bal) < 1e-12 and inv_gap < direct_gap):
             return inv_thr, True
         return direct_thr, False
 
