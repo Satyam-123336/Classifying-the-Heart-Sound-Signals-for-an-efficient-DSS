@@ -1,0 +1,10 @@
+{
+  "weight_source": "cv_accuracy",
+  "models": {
+    "svm": 0.22025681826592164,
+    "gradient_boosting": 0.19901565333234655,
+    "histogram_gradient_boosting": 0.2195907190171336,
+    "random_forest": 0.22033082929356482,
+    "adaboost": 0.14080598009103357
+  }
+}

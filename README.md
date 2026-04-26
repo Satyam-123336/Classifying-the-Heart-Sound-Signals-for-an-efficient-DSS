@@ -29,8 +29,14 @@ Upload all files from this folder to the root of the Space repo:
 Then upload model artifacts under this exact structure:
 
 - `artifacts/saved_models/svm.pkl`
-- `artifacts/results/pca_cached.joblib`
-- `artifacts/results/decision_threshold_cached.json`
+- `artifacts/saved_models/gradient_boosting.pkl`
+- `artifacts/saved_models/histogram_gradient_boosting.pkl`
+- `artifacts/saved_models/random_forest.pkl`
+- `artifacts/saved_models/adaboost.pkl`
+- `artifacts/results/features_raw.npy`
+- `artifacts/results/features_reduced.npy`
+- `artifacts/results/labels.npy`
+- `artifacts/results/ensemble_weights.json`
 
 If files are large, use Git LFS in the Space repo.
 
