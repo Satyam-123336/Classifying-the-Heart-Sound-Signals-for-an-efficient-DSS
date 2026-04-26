@@ -57,6 +57,7 @@ class RemoteHeartDSSService:
         self.pca_cache_path = self.artifacts_dir / "results" / "pca_cached.joblib"
         self.pca_meta_path = self.artifacts_dir / "results" / "pca_cached_meta.json"
         self.threshold_cache_path = self.artifacts_dir / "results" / "decision_threshold_cached.json"
+        self.invert_score = False
 
         self.models, self.model_order, self.weights = self._load_models_and_weights()
 
@@ -83,10 +84,12 @@ class RemoteHeartDSSService:
                 f"Missing PCA cache. Provide {self.pca_cache_path} before starting the service."
             )
 
-        self.decision_threshold = self._load_cached_threshold()
+        cached_threshold, cached_invert = self._load_cached_threshold()
+        self.decision_threshold = cached_threshold
+        self.invert_score = cached_invert
         if self.decision_threshold is None:
-            self.decision_threshold = self._calibrate_decision_threshold()
-            self._save_cached_threshold(self.decision_threshold)
+            self.decision_threshold, self.invert_score = self._calibrate_decision_threshold()
+            self._save_cached_threshold(self.decision_threshold, self.invert_score)
 
     @staticmethod
     def _safe_mtime(path: Path) -> float:
@@ -183,25 +186,32 @@ class RemoteHeartDSSService:
         except Exception:
             pass
 
-    def _load_cached_threshold(self) -> float | None:
+    def _load_cached_threshold(self) -> tuple[float | None, bool]:
         if not self.threshold_cache_path.exists():
-            return None
+            return None, False
 
         try:
             payload = json.loads(self.threshold_cache_path.read_text(encoding="utf-8"))
             if payload.get("meta", {}) != self._threshold_meta():
-                return None
+                return None, False
+            if "invert_score" not in payload:
+                return None, False
             threshold = float(payload.get("threshold"))
             if not np.isfinite(threshold):
-                return None
-            return threshold
+                return None, False
+            invert_score = bool(payload.get("invert_score", False))
+            return threshold, invert_score
         except Exception:
-            return None
+            return None, False
 
-    def _save_cached_threshold(self, threshold: float) -> None:
+    def _save_cached_threshold(self, threshold: float, invert_score: bool) -> None:
         try:
             self.threshold_cache_path.parent.mkdir(parents=True, exist_ok=True)
-            payload = {"threshold": float(threshold), "meta": self._threshold_meta()}
+            payload = {
+                "threshold": float(threshold),
+                "invert_score": bool(invert_score),
+                "meta": self._threshold_meta(),
+            }
             self.threshold_cache_path.write_text(json.dumps(payload), encoding="utf-8")
         except Exception:
             pass
@@ -258,44 +268,51 @@ class RemoteHeartDSSService:
         proba_matrix = np.column_stack(per_model)
         return proba_matrix @ self.weights
 
-    def _calibrate_decision_threshold(self) -> float:
+    def _calibrate_decision_threshold(self) -> tuple[float, bool]:
         if not self.label_cache.exists():
-            return 0.5
+            return 0.5, False
 
         y_true = np.load(self.label_cache)
         if y_true.ndim != 1 or y_true.size == 0 or len(np.unique(y_true)) < 2:
-            return 0.5
+            return 0.5, False
 
         if not self.reduced_feature_cache.exists():
-            return 0.5
+            return 0.5, False
 
         x = np.load(self.reduced_feature_cache)
 
         if x.shape[0] != y_true.shape[0]:
-            return 0.5
+            return 0.5, False
 
         scores = self._ensemble_score(x)
 
-        best_thr = 0.5
-        best_bal = -1.0
+        def best_threshold(for_scores: np.ndarray) -> tuple[float, float]:
+            local_best_thr = 0.5
+            local_best_bal = -1.0
+            candidates = np.unique(np.quantile(for_scores, np.linspace(0.05, 0.95, 181)))
+            for thr in candidates:
+                pred = (for_scores >= thr).astype(int)
+                tn = int(np.sum((y_true == 0) & (pred == 0)))
+                fp = int(np.sum((y_true == 0) & (pred == 1)))
+                fn = int(np.sum((y_true == 1) & (pred == 0)))
+                tp = int(np.sum((y_true == 1) & (pred == 1)))
 
-        candidates = np.unique(np.quantile(scores, np.linspace(0.05, 0.95, 181)))
-        for thr in candidates:
-            pred = (scores >= thr).astype(int)
-            tn = int(np.sum((y_true == 0) & (pred == 0)))
-            fp = int(np.sum((y_true == 0) & (pred == 1)))
-            fn = int(np.sum((y_true == 1) & (pred == 0)))
-            tp = int(np.sum((y_true == 1) & (pred == 1)))
+                sens = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+                spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+                bal = 0.5 * (sens + spec)
 
-            sens = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-            spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
-            bal = 0.5 * (sens + spec)
+                if bal > local_best_bal:
+                    local_best_bal = bal
+                    local_best_thr = float(thr)
+            return local_best_thr, local_best_bal
 
-            if bal > best_bal:
-                best_bal = bal
-                best_thr = float(thr)
+        direct_thr, direct_bal = best_threshold(scores)
+        inv_scores = 1.0 - scores
+        inv_thr, inv_bal = best_threshold(inv_scores)
 
-        return best_thr
+        if inv_bal > direct_bal:
+            return inv_thr, True
+        return direct_thr, False
 
     def predict_from_audio_bytes(self, audio_bytes: bytes) -> PredictionResponse:
         waveform, sr = librosa.load(io.BytesIO(audio_bytes), sr=None, mono=True)
@@ -306,8 +323,9 @@ class RemoteHeartDSSService:
         fused = self._extract_fused_features(chroma_rgb)
         reduced = self.pca.transform(fused).astype(np.float32, copy=False)
 
-        score = float(self._ensemble_score(reduced)[0])
-        score = min(max(score, 0.0), 1.0)
+        raw_score = float(self._ensemble_score(reduced)[0])
+        raw_score = min(max(raw_score, 0.0), 1.0)
+        score = 1.0 - raw_score if self.invert_score else raw_score
 
         label = "Normal" if score >= self.decision_threshold else "Abnormal"
         probability_normal = score
