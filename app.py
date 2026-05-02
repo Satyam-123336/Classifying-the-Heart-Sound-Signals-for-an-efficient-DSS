@@ -2,10 +2,12 @@
 Heart Health DSS - Inference API
 Using Harris Hawks Optimization (HHO) for feature selection
 No AdaBoost - Ensemble of SVM, Gradient Boosting, Histogram Gradient Boosting, Random Forest
+Converts audio to chromagram for feature extraction
 """
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import warnings
@@ -13,9 +15,12 @@ from pathlib import Path
 
 import cv2
 import joblib
+import librosa
+import librosa.display
 import matplotlib
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sklearn.exceptions import InconsistentVersionWarning
 from tensorflow.keras.applications import MobileNetV2, VGG19
@@ -140,17 +145,18 @@ class RemoteHeartDSSService:
             pass
         return None
 
-    def extract_features_from_image(self, image_array: np.ndarray) -> np.ndarray:
-        if image_array.shape != (224, 224, 3):
-            image_array = cv2.resize(image_array, (224, 224))
+    def extract_features_from_image(self, chroma_rgb: np.ndarray) -> np.ndarray:
+        """Extract pooled features from chromagram image."""
+        if chroma_rgb.shape != (224, 224, 3):
+            chroma_rgb = cv2.resize(chroma_rgb, (224, 224))
 
-        if len(image_array.shape) == 2:
-            image_array = cv2.cvtColor(image_array, cv2.COLOR_GRAY2BGR)
-        elif image_array.shape[2] == 4:
-            image_array = cv2.cvtColor(image_array, cv2.COLOR_BGRA2BGR)
+        if len(chroma_rgb.shape) == 2:
+            chroma_rgb = cv2.cvtColor(chroma_rgb, cv2.COLOR_GRAY2BGR)
+        elif chroma_rgb.shape[2] == 4:
+            chroma_rgb = cv2.cvtColor(chroma_rgb, cv2.COLOR_BGRA2BGR)
 
-        image_vgg = preprocess_vgg(image_array.astype(np.float32))
-        image_mobilenet = preprocess_mobilenet(image_array.astype(np.float32))
+        image_vgg = preprocess_vgg(chroma_rgb.astype(np.float32))
+        image_mobilenet = preprocess_mobilenet(chroma_rgb.astype(np.float32))
 
         vgg_features = self.vgg_model.predict(np.expand_dims(image_vgg, 0), verbose=0)
         mobilenet_features = self.mobilenet_model.predict(np.expand_dims(image_mobilenet, 0), verbose=0)
@@ -163,6 +169,39 @@ class RemoteHeartDSSService:
 
     def select_features_with_hho(self, features: np.ndarray) -> np.ndarray:
         return features[self.hho_indices]
+
+    @staticmethod
+    def render_chromagram_to_rgb(audio_bytes: bytes) -> np.ndarray:
+        """Convert audio bytes to chromagram image (RGB)."""
+        try:
+            waveform, sr = librosa.load(io.BytesIO(audio_bytes), sr=None, mono=True)
+        except Exception as exc:
+            raise ValueError(f"Failed to load audio: {exc}") from exc
+
+        if waveform.size == 0:
+            raise ValueError("Audio is empty or unreadable")
+
+        try:
+            chroma = librosa.feature.chroma_stft(y=waveform, sr=sr, hop_length=512, n_fft=2048)
+
+            fig = plt.figure(figsize=(15, 5), dpi=100)
+            ax = plt.axes([0.0, 0.0, 1.0, 1.0], frameon=False, xticks=[], yticks=[])
+            librosa.display.specshow(chroma, sr=sr, hop_length=512, cmap="coolwarm", ax=ax)
+
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png", bbox_inches=None, pad_inches=0)
+            plt.close(fig)
+
+            img_arr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+            bgr = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
+            if bgr is None:
+                raise ValueError("Failed to decode chromagram image")
+
+            rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+            return rgb
+        except Exception as exc:
+            raise ValueError(f"Failed to render chromagram: {exc}") from exc
+
 
     def predict(self, features: np.ndarray) -> dict:
         if len(features.shape) == 1:
@@ -250,7 +289,7 @@ async def health_check():
         get_service()
         return {"status": "ok", "service": "Heart Health DSS", "build_tag": APP_BUILD_TAG}
     except Exception as exc:
-        return {"status": "error", "message": str(exc)}, 503
+        return JSONResponse(status_code=503, content={"status": "error", "message": str(exc)})
 
 
 @app.post("/predict", response_model=PredictionResponse)
@@ -259,14 +298,19 @@ async def predict(file: UploadFile = File(...)):
         service = get_service()
 
         contents = await file.read()
-        nparr = np.frombuffer(contents, np.uint8)
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if not contents:
+            raise ValueError("Uploaded file is empty")
 
-        if image is None:
-            raise ValueError("Failed to decode image")
+        # Convert audio to chromagram
+        chroma_rgb = RemoteHeartDSSService.render_chromagram_to_rgb(contents)
 
-        features = service.extract_features_from_image(image)
+        # Extract features from chromagram
+        features = service.extract_features_from_image(chroma_rgb)
+        
+        # Apply HHO feature selection
         selected_features = service.select_features_with_hho(features)
+        
+        # Predict
         result = service.predict(selected_features)
 
         return PredictionResponse(**result)
