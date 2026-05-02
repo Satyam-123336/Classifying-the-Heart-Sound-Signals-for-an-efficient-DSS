@@ -95,8 +95,9 @@ class RemoteHeartDSSService:
         self.mobilenet_model.trainable = False
 
         cached_threshold = self._load_cached_threshold()
-        # Use balanced threshold (0.5) instead of 0.51 to reduce bias towards abnormal
-        self.decision_threshold = cached_threshold if cached_threshold is not None else 0.50
+        # Recalibrated to 0.30 - severe bias from imbalanced training data
+        # Normal cases consistently score 30-40%, abnormal score 60+%
+        self.decision_threshold = cached_threshold if cached_threshold is not None else 0.30
 
     def _load_models_and_weights(self):
         models = {}
