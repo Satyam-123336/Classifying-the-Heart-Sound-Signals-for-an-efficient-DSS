@@ -1,6 +1,11 @@
+"""
+Heart Health DSS - Inference API
+Using Harris Hawks Optimization (HHO) for feature selection
+No AdaBoost - Ensemble of SVM, Gradient Boosting, Histogram Gradient Boosting, Random Forest
+"""
+
 from __future__ import annotations
 
-import io
 import json
 import os
 import warnings
@@ -8,13 +13,10 @@ from pathlib import Path
 
 import cv2
 import joblib
-import librosa
-import librosa.display
 import matplotlib
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
-from sklearn.decomposition import IncrementalPCA
 from sklearn.exceptions import InconsistentVersionWarning
 from tensorflow.keras.applications import MobileNetV2, VGG19
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input as preprocess_mobilenet
@@ -24,16 +26,17 @@ from tensorflow.keras.models import Model
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-
+APP_BUILD_TAG = "hho-v1.0"
 IMAGE_SIZE = (224, 224)
-PCA_BATCH_SIZE = 128
+
 MODEL_FILES = {
     "svm": "svm.pkl",
     "gradient_boosting": "gradient_boosting.pkl",
     "histogram_gradient_boosting": "histogram_gradient_boosting.pkl",
     "random_forest": "random_forest.pkl",
-    "adaboost": "adaboost.pkl",
 }
+
+HHO_N_SELECT = 512
 
 
 class PredictionResponse(BaseModel):
@@ -54,13 +57,8 @@ class RemoteHeartDSSService:
         self.artifacts_dir = Path(os.environ.get("HF_ARTIFACTS_DIR", "./artifacts")).resolve()
         self.models_dir = self.artifacts_dir / "saved_models"
         self.ensemble_weights_path = self.artifacts_dir / "results" / "ensemble_weights.json"
-        self.reduced_feature_cache = self.artifacts_dir / "results" / "features_reduced.npy"
-        self.label_cache = self.artifacts_dir / "results" / "labels.npy"
-        self.pca_cache_path = self.artifacts_dir / "results" / "pca_cached.joblib"
-        self.pca_meta_path = self.artifacts_dir / "results" / "pca_cached_meta.json"
+        self.hho_indices_path = self.artifacts_dir / "results" / "hho_selected_indices.npy"
         self.threshold_cache_path = self.artifacts_dir / "results" / "decision_threshold_cached.json"
-        self.invert_score = False
-        self.class1_indices: dict[str, int] = {}
 
         self.models, self.model_order, self.weights = self._load_models_and_weights()
 
@@ -68,10 +66,20 @@ class RemoteHeartDSSService:
         if self.expected_dim is None:
             raise ValueError("Loaded model does not expose n_features_in_.")
 
+        if self.expected_dim != HHO_N_SELECT:
+            raise ValueError(
+                f"Model expects {self.expected_dim} features, but HHO selects {HHO_N_SELECT}. "
+                "Ensure models were trained with matching feature selection."
+            )
+
         for name in self.model_order[1:]:
             dim = getattr(self.models[name], "n_features_in_", None)
             if dim != self.expected_dim:
                 raise ValueError(f"Model feature dimension mismatch: {name} has {dim}, expected {self.expected_dim}")
+
+        self.hho_indices = self._load_hho_indices()
+        if self.hho_indices is None:
+            raise FileNotFoundError(f"Missing HHO indices at {self.hho_indices_path}")
 
         vgg_base = VGG19(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
         self.vgg_model = Model(inputs=vgg_base.input, outputs=vgg_base.output)
@@ -81,51 +89,19 @@ class RemoteHeartDSSService:
         self.mobilenet_model = Model(inputs=mobilenet_base.input, outputs=mobilenet_base.output)
         self.mobilenet_model.trainable = False
 
-        self.pca = self._load_cached_pca()
-        if self.pca is None:
-            raise FileNotFoundError(
-                f"Missing PCA cache. Provide {self.pca_cache_path} before starting the service."
-            )
-
-        cached_threshold, cached_invert = self._load_cached_threshold()
-        self.decision_threshold = cached_threshold
-        self.invert_score = cached_invert
-        if self.decision_threshold is None:
-            self.decision_threshold, self.invert_score = self._calibrate_decision_threshold()
-            self._save_cached_threshold(self.decision_threshold, self.invert_score)
-
-    @staticmethod
-    def _safe_mtime(path: Path) -> float:
-        try:
-            return float(path.stat().st_mtime)
-        except Exception:
-            return 0.0
-
-    def _pca_meta_is_compatible(self, cached_meta: object) -> bool:
-        if not isinstance(cached_meta, dict):
-            return False
-
-        expected_dim = cached_meta.get("expected_dim")
-        if expected_dim is not None:
-            try:
-                if int(expected_dim) != int(self.expected_dim):
-                    return False
-            except Exception:
-                return False
-
-        return True
+        cached_threshold = self._load_cached_threshold()
+        self.decision_threshold = cached_threshold if cached_threshold is not None else 0.510
 
     def _load_models_and_weights(self):
         models = {}
         for name, filename in MODEL_FILES.items():
             model_path = self.models_dir / filename
-            if model_path.exists():
-                with warnings.catch_warnings():
-                    warnings.simplefilter("error", InconsistentVersionWarning)
-                    models[name] = joblib.load(model_path)
+            if not model_path.exists():
+                raise FileNotFoundError(f"Missing model file: {model_path}")
 
-        if not models:
-            raise FileNotFoundError(f"No model files found in {self.models_dir}")
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", InconsistentVersionWarning)
+                models[name] = joblib.load(model_path)
 
         model_order = list(models.keys())
         weights = np.ones(len(model_order), dtype=np.float64)
@@ -137,343 +113,182 @@ class RemoteHeartDSSService:
                 if isinstance(model_weights, dict):
                     weights = np.array([float(model_weights.get(name, 0.0)) for name in model_order], dtype=np.float64)
             except Exception:
-                weights = np.ones(len(model_order), dtype=np.float64)
+                pass
 
         if np.sum(weights) <= 0:
             weights = np.ones(len(model_order), dtype=np.float64)
 
         weights = weights / np.sum(weights)
 
-        self.class1_indices = {}
-        for name in model_order:
-            classes = getattr(models[name], "classes_", None)
-            if classes is None:
-                self.class1_indices[name] = 1
-                continue
-
-            classes_arr = np.asarray(classes)
-            idx = np.where(classes_arr == 1)[0]
-            if idx.size > 0:
-                self.class1_indices[name] = int(idx[0])
-            else:
-                self.class1_indices[name] = min(1, max(len(classes_arr) - 1, 0))
-
         return models, model_order, weights
 
-    def _pca_meta(self) -> dict:
-        return {
-            "expected_dim": int(self.expected_dim),
-            "reduced_feature_cache_mtime": self._safe_mtime(self.reduced_feature_cache),
-            "results_dir_mtime": self._safe_mtime(self.artifacts_dir / "results"),
-        }
-
-    def _threshold_meta(self) -> dict:
-        return {
-            "expected_dim": int(self.expected_dim),
-            "build_tag": APP_BUILD_TAG,
-        }
-
-    def _threshold_meta_is_compatible(self, cached_meta: object) -> bool:
-        if not isinstance(cached_meta, dict):
-            return False
-
-        try:
-            cached_expected_dim = int(cached_meta.get("expected_dim"))
-        except Exception:
-            return False
-
-        cached_build_tag = str(cached_meta.get("build_tag", "")).strip()
-        return cached_expected_dim == int(self.expected_dim) and cached_build_tag == APP_BUILD_TAG
-
-    def _load_cached_pca(self) -> IncrementalPCA | None:
-        if not self.pca_cache_path.exists():
+    def _load_hho_indices(self) -> np.ndarray | None:
+        if not self.hho_indices_path.exists():
             return None
-
         try:
-            pca = joblib.load(self.pca_cache_path)
-            n_components = int(getattr(pca, "n_components_", 0))
-            if n_components != int(self.expected_dim):
-                return None
-
-            if self.pca_meta_path.exists():
-                try:
-                    cached_meta = json.loads(self.pca_meta_path.read_text(encoding="utf-8"))
-                except Exception:
-                    return None
-                if not self._pca_meta_is_compatible(cached_meta):
-                    return None
-
-            return pca
+            indices = np.load(self.hho_indices_path)
+            return indices.astype(np.int32)
         except Exception:
             return None
 
-    def _save_cached_pca(self, pca: IncrementalPCA) -> None:
+    def _load_cached_threshold(self) -> float | None:
         try:
-            self.pca_cache_path.parent.mkdir(parents=True, exist_ok=True)
-            joblib.dump(pca, self.pca_cache_path)
-            self.pca_meta_path.write_text(json.dumps(self._pca_meta()), encoding="utf-8")
+            if self.threshold_cache_path.exists():
+                data = json.loads(self.threshold_cache_path.read_text(encoding="utf-8"))
+                return float(data.get("decision_threshold", 0.510))
         except Exception:
             pass
+        return None
 
-    def _load_cached_threshold(self) -> tuple[float | None, bool]:
-        if not self.threshold_cache_path.exists():
-            return None, False
+    def extract_features_from_image(self, image_array: np.ndarray) -> np.ndarray:
+        if image_array.shape != (224, 224, 3):
+            image_array = cv2.resize(image_array, (224, 224))
 
-        try:
-            payload = json.loads(self.threshold_cache_path.read_text(encoding="utf-8"))
-            if not self._threshold_meta_is_compatible(payload.get("meta", {})):
-                return None, False
-            if "invert_score" not in payload:
-                return None, False
-            threshold = float(payload.get("threshold"))
-            if not np.isfinite(threshold):
-                return None, False
-            invert_score = bool(payload.get("invert_score", False))
-            return threshold, invert_score
-        except Exception:
-            return None, False
+        if len(image_array.shape) == 2:
+            image_array = cv2.cvtColor(image_array, cv2.COLOR_GRAY2BGR)
+        elif image_array.shape[2] == 4:
+            image_array = cv2.cvtColor(image_array, cv2.COLOR_BGRA2BGR)
 
-    def _save_cached_threshold(self, threshold: float, invert_score: bool) -> None:
-        try:
-            self.threshold_cache_path.parent.mkdir(parents=True, exist_ok=True)
-            payload = {
-                "threshold": float(threshold),
-                "invert_score": bool(invert_score),
-                "meta": self._threshold_meta(),
-            }
-            self.threshold_cache_path.write_text(json.dumps(payload), encoding="utf-8")
-        except Exception:
-            pass
+        image_vgg = preprocess_vgg(image_array.astype(np.float32))
+        image_mobilenet = preprocess_mobilenet(image_array.astype(np.float32))
 
-    @staticmethod
-    def _render_chromagram_to_rgb(waveform: np.ndarray, sr: int) -> np.ndarray:
-        chroma = librosa.feature.chroma_stft(y=waveform, sr=sr, hop_length=512, n_fft=2048)
+        vgg_features = self.vgg_model.predict(np.expand_dims(image_vgg, 0), verbose=0)
+        mobilenet_features = self.mobilenet_model.predict(np.expand_dims(image_mobilenet, 0), verbose=0)
 
-        fig = plt.figure(figsize=(15, 5), dpi=100)
-        ax = plt.axes([0.0, 0.0, 1.0, 1.0], frameon=False, xticks=[], yticks=[])
-        librosa.display.specshow(chroma, sr=sr, hop_length=512, cmap="coolwarm", ax=ax)
+        vgg_pooled = np.mean(vgg_features[0], axis=(0, 1))
+        mobilenet_pooled = np.mean(mobilenet_features[0], axis=(0, 1))
 
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png", bbox_inches=None, pad_inches=0)
-        plt.close(fig)
+        fused_features = np.concatenate([vgg_pooled, mobilenet_pooled])
+        return fused_features
 
-        img_arr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
-        bgr = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
-        if bgr is None:
-            raise ValueError("Failed to render chromagram image")
+    def select_features_with_hho(self, features: np.ndarray) -> np.ndarray:
+        return features[self.hho_indices]
 
-        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-        return rgb
+    def predict(self, features: np.ndarray) -> dict:
+        if len(features.shape) == 1:
+            features = features.reshape(1, -1)
 
-    def _extract_fused_features(self, chroma_rgb: np.ndarray) -> np.ndarray:
-        resized = cv2.resize(chroma_rgb, IMAGE_SIZE).astype(np.float32)
-        batch = np.expand_dims(resized, axis=0)
+        if features.shape[1] != self.expected_dim:
+            raise ValueError(f"Expected {self.expected_dim} features, got {features.shape[1]}")
 
-        vgg_batch = preprocess_vgg(batch.copy())
-        mobile_batch = preprocess_mobilenet(batch.copy())
+        probabilities = {}
 
-        vgg_feat = self.vgg_model.predict(vgg_batch, verbose=0).reshape(1, -1)
-        mobile_feat = self.mobilenet_model.predict(mobile_batch, verbose=0).reshape(1, -1)
+        for name in self.model_order:
+            model = self.models[name]
+            pred_proba = model.predict_proba(features)[0]
 
-        return np.hstack([vgg_feat, mobile_feat]).astype(np.float32, copy=False)
+            classes = getattr(model, "classes_", np.array([0, 1]))
+            if 1 in classes:
+                idx_normal = np.where(classes == 1)[0][0]
+                idx_abnormal = 1 - idx_normal
+            else:
+                idx_normal = 0
+                idx_abnormal = 1
 
-    def _probability_scores(self, model_name: str, model, x: np.ndarray) -> np.ndarray:
-        if hasattr(model, "predict_proba"):
-            proba = model.predict_proba(x)
-            if proba.ndim == 2 and proba.shape[1] > 1:
-                col = int(self.class1_indices.get(model_name, 1))
-                col = max(0, min(col, proba.shape[1] - 1))
-                return proba[:, col].astype(np.float64)
-            return proba.reshape(-1).astype(np.float64)
+            prob_normal = float(pred_proba[idx_normal])
+            probabilities[name] = prob_normal
 
-        if hasattr(model, "decision_function"):
-            raw = model.decision_function(x).astype(np.float64)
-            min_v = float(np.min(raw))
-            max_v = float(np.max(raw))
-            if max_v - min_v < 1e-8:
-                return np.full_like(raw, 0.5, dtype=np.float64)
-            return (raw - min_v) / (max_v - min_v)
-
-        return model.predict(x).astype(np.float64)
-
-    def _ensemble_score(self, x: np.ndarray) -> np.ndarray:
-        per_model = [self._probability_scores(name, self.models[name], x) for name in self.model_order]
-        proba_matrix = np.column_stack(per_model)
-        return proba_matrix @ self.weights
-
-    def _calibrate_decision_threshold(self) -> tuple[float, bool]:
-        if not self.label_cache.exists():
-            return 0.5, False
-
-        y_true = np.load(self.label_cache)
-        if y_true.ndim != 1 or y_true.size == 0 or len(np.unique(y_true)) < 2:
-            return 0.5, False
-
-        if not self.reduced_feature_cache.exists():
-            return 0.5, False
-
-        x = np.load(self.reduced_feature_cache)
-
-        if x.shape[0] != y_true.shape[0]:
-            return 0.5, False
-
-        scores = self._ensemble_score(x)
-
-        def select_threshold(for_scores: np.ndarray) -> tuple[float, float, float]:
-            local_best_thr = 0.5
-            local_best_bal = -1.0
-            local_best_rate = 1.0
-            prevalence_target = float(np.mean(y_true == 1))
-
-            best_prev_thr = 0.5
-            best_prev_gap = 1e9
-            best_prev_bal = -1.0
-            candidates = np.unique(np.quantile(for_scores, np.linspace(0.05, 0.95, 181)))
-            for thr in candidates:
-                pred = (for_scores >= thr).astype(int)
-                tn = int(np.sum((y_true == 0) & (pred == 0)))
-                fp = int(np.sum((y_true == 0) & (pred == 1)))
-                fn = int(np.sum((y_true == 1) & (pred == 0)))
-                tp = int(np.sum((y_true == 1) & (pred == 1)))
-
-                sens = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-                spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
-                bal = 0.5 * (sens + spec)
-                pred_rate = float(np.mean(pred == 1))
-                prev_gap = abs(pred_rate - prevalence_target)
-
-                if bal > local_best_bal:
-                    local_best_bal = bal
-                    local_best_thr = float(thr)
-                    local_best_rate = pred_rate
-
-                if (prev_gap < best_prev_gap) or (abs(prev_gap - best_prev_gap) < 1e-12 and bal > best_prev_bal):
-                    best_prev_gap = prev_gap
-                    best_prev_thr = float(thr)
-                    best_prev_bal = bal
-
-            # Prevent degenerate all-one/all-zero behavior from dominating calibration.
-            if local_best_rate < 0.2 or local_best_rate > 0.8:
-                return best_prev_thr, best_prev_bal, best_prev_gap
-            return local_best_thr, local_best_bal, abs(local_best_rate - prevalence_target)
-
-        direct_thr, direct_bal, direct_gap = select_threshold(scores)
-        inv_scores = 1.0 - scores
-        inv_thr, inv_bal, inv_gap = select_threshold(inv_scores)
-
-        if (inv_bal > direct_bal) or (abs(inv_bal - direct_bal) < 1e-12 and inv_gap < direct_gap):
-            selected_thr = inv_thr
-            selected_invert = True
-        else:
-            selected_thr = direct_thr
-            selected_invert = False
-
-        prevalence_target = float(np.mean(y_true == 1))
-        if 0.4 <= prevalence_target <= 0.6 and not (0.3 <= selected_thr <= 0.7):
-            return 0.5, False
-
-        return selected_thr, selected_invert
-
-    def predict_from_audio_bytes(self, audio_bytes: bytes) -> PredictionResponse:
-        waveform, sr = librosa.load(io.BytesIO(audio_bytes), sr=None, mono=True)
-        if waveform.size == 0:
-            raise ValueError("Uploaded audio is empty or unreadable")
-
-        chroma_rgb = self._render_chromagram_to_rgb(waveform, sr)
-        fused = self._extract_fused_features(chroma_rgb)
-        reduced = self.pca.transform(fused).astype(np.float32, copy=False)
-
-        raw_score = float(self._ensemble_score(reduced)[0])
-        raw_score = min(max(raw_score, 0.0), 1.0)
-        score = 1.0 - raw_score if self.invert_score else raw_score
-
-        probability_normal = score
-        probability_abnormal = 1.0 - probability_normal
-        label = "Normal" if probability_normal >= self.decision_threshold else "Abnormal"
-
-        confidence = probability_normal if label == "Normal" else probability_abnormal
-
-        margin = abs(score - self.decision_threshold)
-        if margin < 0.03:
-            strength = "borderline"
-        elif margin < 0.10:
-            strength = "moderate"
-        else:
-            strength = "strong"
-
-        if label == "Abnormal":
-            explanation = (
-                f"Abnormal because Normal score {probability_normal:.2%} is below threshold {self.decision_threshold:.2%}."
-            )
-        else:
-            explanation = (
-                f"Normal because Normal score {probability_normal:.2%} is at or above threshold {self.decision_threshold:.2%}."
-            )
-
-        return PredictionResponse(
-            label=label,
-            probability_normal=probability_normal,
-            probability_abnormal=probability_abnormal,
-            confidence=confidence,
-            score=score,
-            decision_threshold=self.decision_threshold,
-            decision_margin=margin,
-            decision_strength=strength,
-            explanation=explanation,
-            message=f"The uploaded heartbeat appears {label.lower()}.",
+        ensemble_score_normal = sum(
+            self.weights[i] * probabilities[self.model_order[i]]
+            for i in range(len(self.model_order))
         )
 
+        ensemble_prediction = 1 if ensemble_score_normal >= self.decision_threshold else 0
+        label = "Normal" if ensemble_prediction == 1 else "Abnormal"
 
-app = FastAPI(title="Heart Health DSS Remote API", version="1.0.0")
+        confidence = max(ensemble_score_normal, 1 - ensemble_score_normal)
+        decision_margin = abs(ensemble_score_normal - self.decision_threshold)
+
+        if decision_margin > 0.2:
+            strength = "Strong"
+        elif decision_margin > 0.1:
+            strength = "Moderate"
+        else:
+            strength = "Weak"
+
+        explanation = (
+            f"Ensemble score (Normal probability): {ensemble_score_normal:.4f}\n"
+            f"Decision threshold: {self.decision_threshold:.4f}\n"
+            f"Individual model scores: "
+            + ", ".join([f"{name}={probabilities[name]:.4f}" for name in self.model_order])
+        )
+
+        return {
+            "label": label,
+            "probability_normal": ensemble_score_normal,
+            "probability_abnormal": 1 - ensemble_score_normal,
+            "confidence": confidence,
+            "score": ensemble_score_normal,
+            "decision_threshold": self.decision_threshold,
+            "decision_margin": decision_margin,
+            "decision_strength": strength,
+            "explanation": explanation,
+            "message": f"Prediction: {label} (confidence: {confidence:.2%})",
+        }
+
+
 service: RemoteHeartDSSService | None = None
-startup_error: str | None = None
-APP_BUILD_TAG = "2026-04-26-heart-disease-cache-sync"
 
 
-@app.on_event("startup")
-def startup_event() -> None:
-    global service, startup_error
-    try:
+def get_service() -> RemoteHeartDSSService:
+    global service
+    if service is None:
         service = RemoteHeartDSSService()
-        startup_error = None
-    except Exception as exc:
-        startup_error = str(exc)
-        service = None
+    return service
+
+
+app = FastAPI(
+    title="Heart Health DSS - Inference API",
+    description="Ensemble prediction using Harris Hawks Optimization (HHO) feature selection",
+    version="1.0.0",
+)
 
 
 @app.get("/health")
-def health() -> dict:
-    runtime = {
-        "build": APP_BUILD_TAG,
-        "decision_threshold": None,
-        "invert_score": None,
-    }
-    if service is not None:
-        runtime["decision_threshold"] = float(service.decision_threshold)
-        runtime["invert_score"] = bool(getattr(service, "invert_score", False))
-
-    return {
-        "status": "ok" if service is not None else "error",
-        "model_loaded": service is not None,
-        "error": startup_error,
-        "runtime": runtime,
-    }
+async def health_check():
+    try:
+        get_service()
+        return {"status": "ok", "service": "Heart Health DSS", "build_tag": APP_BUILD_TAG}
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}, 503
 
 
 @app.post("/predict", response_model=PredictionResponse)
-async def predict(file: UploadFile = File(...)) -> PredictionResponse:
-    if service is None:
-        raise HTTPException(status_code=503, detail=f"Service not ready: {startup_error}")
-
-    ext = Path(file.filename or "").suffix.lower()
-    if ext not in {".wav", ".mp3", ".flac", ".ogg", ".m4a"}:
-        raise HTTPException(status_code=400, detail="Unsupported audio format")
-
-    audio = await file.read()
-    if not audio:
-        raise HTTPException(status_code=400, detail="Uploaded file is empty")
-
+async def predict(file: UploadFile = File(...)):
     try:
-        return service.predict_from_audio_bytes(audio)
+        service = get_service()
+
+        contents = await file.read()
+        nparr = np.frombuffer(contents, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if image is None:
+            raise ValueError("Failed to decode image")
+
+        features = service.extract_features_from_image(image)
+        selected_features = service.select_features_with_hho(features)
+        result = service.predict(selected_features)
+
+        return PredictionResponse(**result)
+
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {exc}") from exc
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.get("/model-info")
+async def model_info():
+    service = get_service()
+    return {
+        "ensemble_models": service.model_order,
+        "ensemble_weights": {name: float(service.weights[i]) for i, name in enumerate(service.model_order)},
+        "feature_count": service.expected_dim,
+        "feature_selection_method": "Harris Hawks Optimization (HHO)",
+        "decision_threshold": service.decision_threshold,
+        "build_tag": APP_BUILD_TAG,
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=7860)

@@ -1,10 +1,9 @@
 {
-  "weight_source": "cv_accuracy",
+  "weight_source": "cv_accuracy_power4",
   "models": {
-    "svm": 0.22025681826592164,
-    "gradient_boosting": 0.19901565333234655,
-    "histogram_gradient_boosting": 0.2195907190171336,
-    "random_forest": 0.22033082929356482,
-    "adaboost": 0.14080598009103357
+    "svm": 0.28303932743864113,
+    "gradient_boosting": 0.11762267195303895,
+    "histogram_gradient_boosting": 0.28058203978055163,
+    "random_forest": 0.3187559608277682
   }
 }

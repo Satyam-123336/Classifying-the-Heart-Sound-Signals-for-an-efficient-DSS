@@ -1,9 +1,0 @@
-{
-  "expected_dim": 512,
-  "raw_feature_shape": [
-    6240,
-    87808
-  ],
-  "svd_solver": "randomized",
-  "compression": 3
-}
