@@ -95,7 +95,8 @@ class RemoteHeartDSSService:
         self.mobilenet_model.trainable = False
 
         cached_threshold = self._load_cached_threshold()
-        self.decision_threshold = cached_threshold if cached_threshold is not None else 0.510
+        # Use balanced threshold (0.5) instead of 0.51 to reduce bias towards abnormal
+        self.decision_threshold = cached_threshold if cached_threshold is not None else 0.50
 
     def _load_models_and_weights(self):
         models = {}
@@ -246,10 +247,9 @@ class RemoteHeartDSSService:
             strength = "Weak"
 
         explanation = (
-            f"Ensemble score (Normal probability): {ensemble_score_normal:.4f}\n"
-            f"Decision threshold: {self.decision_threshold:.4f}\n"
-            f"Individual model scores: "
-            + ", ".join([f"{name}={probabilities[name]:.4f}" for name in self.model_order])
+            f"Ensemble score: {ensemble_score_normal:.2%} | "
+            f"Threshold: {self.decision_threshold:.2%} | "
+            f"Strength: {strength}"
         )
 
         return {
