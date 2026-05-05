@@ -1,0 +1,562 @@
+[
+  {
+    "truth": 0,
+    "score": 0.5630846131716725,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "85080_AV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6505459784876173,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "84851_AV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5684334763666883,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "85163_AV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.4975648719610329,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "68827_AV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.3492369481092366,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "50096_AV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5115527576173446,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "50277_AV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6372826919771802,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "85278_AV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.506405241668099,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "85055_AV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5456240273692566,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "50207_AV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.7120297586505665,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "69093_AV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.32501798154853123,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "50075_AV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.35064329473232053,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "84826_AV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.45929903959561186,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "50264_AV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.43044348023260914,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "50316_AV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.3286563691327715,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "50385_AV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.5697883442063201,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "84724_AV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.40309560406581924,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "85340_AV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.4730722183709841,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "85332_AV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.4005928481132125,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "84697_AV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.6089102493488422,
+    "threshold": 0.21338807093842754,
+    "valve": "AV",
+    "file": "68260_AV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6278695590015967,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "50746_MV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.4834264428079904,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "50325_MV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5026588830618035,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "50244_MV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5789434362033461,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "68741_MV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5948981068639154,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "85139_MV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5739409873745782,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "50277_MV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5394258150933039,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "50386_MV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.681915209815183,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "50640_MV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.7207599568338341,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "9979_MV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5505200481433936,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "84710_MV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.5636829365310432,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "49995_MV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.4080419892953016,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "50781_MV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.21855416446869516,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "84971_MV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.30593574922563427,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "50164_MV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.5276456932746676,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "85337_MV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.32160886507065317,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "50099_MV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.4756402587367848,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "50819_MV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.24491133633031104,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "84826_MV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.5273339235841649,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "84807_MV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.4064608311597163,
+    "threshold": 0.21338807093842754,
+    "valve": "MV",
+    "file": "50749_MV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.4267743489520451,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "50128_PV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6003426910730112,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "85036_PV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.49785522609124916,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "84996_PV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.4781788281632545,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "84837_PV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6465063340024579,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "84865_PV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6722985964840256,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "69188_PV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5521835516057098,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "68827_PV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6802109570431697,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "50111_PV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6355178161111161,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "85243_PV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.49502214492844543,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "50680_PV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.514317787434078,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "50722_PV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.2841728572176217,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "49995_PV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.3153733163371014,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "85196_PV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.46593986231202,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "84866_PV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.47542612704218024,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "85076_PV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.4394285161031736,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "49572_PV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.5159151422594592,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "50008_PV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.4957879451520162,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "85288_PV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.2264392784330448,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "50647_PV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.3687027220653581,
+    "threshold": 0.21338807093842754,
+    "valve": "PV",
+    "file": "85250_PV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.2724661549973018,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "85219_TV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5833402433920944,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "49712_TV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6909073564671451,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "49748_TV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6868427050727155,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "64256_TV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.4225134155990144,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "50708_TV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6811249245759234,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "85315_TV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.5185909672876297,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "85012_TV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.48738100313488314,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "85239_TV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.6651457683678941,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "85227_TV.wav"
+  },
+  {
+    "truth": 0,
+    "score": 0.509434403298515,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "68698_TV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.389631363614239,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "50272_TV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.33106649317649,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "85099_TV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.45944996401608457,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "50781_TV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.5072374986796679,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "50258_TV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.3361256389291188,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "50029_TV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.49812444536791134,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "84743_TV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.49590501407439924,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "84740_TV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.5439287742931782,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "84866_TV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.49134671861946455,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "85151_TV.wav"
+  },
+  {
+    "truth": 1,
+    "score": 0.3467382392594014,
+    "threshold": 0.21338807093842754,
+    "valve": "TV",
+    "file": "84928_TV.wav"
+  }
+]

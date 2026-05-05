@@ -1,0 +1,15 @@
+{
+  "api": "https://satysam-26-heart-disease-detection.hf.space/predict",
+  "sample_size": 40,
+  "threshold_mean": 0.213388,
+  "overall": {
+    "samples": 40,
+    "accuracy": 0.5,
+    "balanced_accuracy": 0.5,
+    "recall_normal": 1.0,
+    "specificity_abnormal": 0.0,
+    "pred_normal_rate": 1.0,
+    "true_normal_rate": 0.5,
+    "normal_rate_gap": 0.5
+  }
+}

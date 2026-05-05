@@ -1,0 +1,32 @@
+{
+  "api": "https://satysam-26-heart-disease-detection.hf.space/predict",
+  "sample_size": 80,
+  "current_threshold": 0.213388,
+  "current_metrics": {
+    "samples": 80,
+    "accuracy": 0.5,
+    "balanced_accuracy": 0.5,
+    "macro_f1": 0.3333,
+    "recall_normal": 1.0,
+    "specificity_abnormal": 0.0,
+    "f1_normal": 0.6667,
+    "f1_abnormal": 0,
+    "pred_normal_rate": 1.0,
+    "true_normal_rate": 0.5,
+    "normal_rate_gap": 0.5
+  },
+  "recommended_threshold": 0.283588,
+  "recommended_metrics": {
+    "samples": 80,
+    "accuracy": 0.475,
+    "balanced_accuracy": 0.475,
+    "macro_f1": 0.3417,
+    "recall_normal": 0.925,
+    "specificity_abnormal": 0.025,
+    "f1_normal": 0.6379,
+    "f1_abnormal": 0.0455,
+    "pred_normal_rate": 0.95,
+    "true_normal_rate": 0.5,
+    "normal_rate_gap": 0.45
+  }
+}

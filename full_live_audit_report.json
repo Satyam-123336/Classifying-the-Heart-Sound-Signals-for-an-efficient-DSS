@@ -1,0 +1,729 @@
+{
+  "total_files_evaluated": 300,
+  "overall": {
+    "samples": 300,
+    "accuracy": 0.3833,
+    "balanced_accuracy": 0.3833,
+    "recall_normal": 0.3867,
+    "specificity_abnormal": 0.38,
+    "true_normal_rate": 0.5,
+    "pred_normal_rate": 0.5033,
+    "normal_rate_gap": 0.0033,
+    "tp": 58,
+    "fn": 92,
+    "tn": 57,
+    "fp": 93
+  },
+  "per_valve": {
+    "AV": {
+      "samples": 78,
+      "accuracy": 0.3333,
+      "balanced_accuracy": 0.3456,
+      "recall_normal": 0.4412,
+      "specificity_abnormal": 0.25,
+      "true_normal_rate": 0.4359,
+      "pred_normal_rate": 0.6154,
+      "normal_rate_gap": 0.1795,
+      "tp": 15,
+      "fn": 19,
+      "tn": 11,
+      "fp": 33
+    },
+    "MV": {
+      "samples": 71,
+      "accuracy": 0.4507,
+      "balanced_accuracy": 0.45,
+      "recall_normal": 0.4,
+      "specificity_abnormal": 0.5,
+      "true_normal_rate": 0.493,
+      "pred_normal_rate": 0.4507,
+      "normal_rate_gap": -0.0423,
+      "tp": 14,
+      "fn": 21,
+      "tn": 18,
+      "fp": 18
+    },
+    "PV": {
+      "samples": 80,
+      "accuracy": 0.4,
+      "balanced_accuracy": 0.401,
+      "recall_normal": 0.3958,
+      "specificity_abnormal": 0.4062,
+      "true_normal_rate": 0.6,
+      "pred_normal_rate": 0.475,
+      "normal_rate_gap": -0.125,
+      "tp": 19,
+      "fn": 29,
+      "tn": 13,
+      "fp": 19
+    },
+    "TV": {
+      "samples": 71,
+      "accuracy": 0.3521,
+      "balanced_accuracy": 0.3489,
+      "recall_normal": 0.303,
+      "specificity_abnormal": 0.3947,
+      "true_normal_rate": 0.4648,
+      "pred_normal_rate": 0.4648,
+      "normal_rate_gap": 0.0,
+      "tp": 10,
+      "fn": 23,
+      "tn": 15,
+      "fp": 23
+    }
+  },
+  "worst_patients_top20": [
+    {
+      "patient_id": "85246",
+      "errors": 3,
+      "files": 3
+    },
+    {
+      "patient_id": "49808",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "49993",
+      "errors": 2,
+      "files": 3
+    },
+    {
+      "patient_id": "50015",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "50233",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "50314",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "50318",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "50668",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "68427",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "68908",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "69096",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "84878",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "84947",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "84996",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "85080",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "85136",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "85299",
+      "errors": 2,
+      "files": 2
+    },
+    {
+      "patient_id": "13918",
+      "errors": 1,
+      "files": 1
+    },
+    {
+      "patient_id": "24160",
+      "errors": 1,
+      "files": 1
+    },
+    {
+      "patient_id": "39043",
+      "errors": 1,
+      "files": 1
+    }
+  ],
+  "error_examples_top50": [
+    {
+      "patient_id": "68532",
+      "valve": "MV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7702,
+      "prob_abnormal": 0.2298,
+      "confidence": 0.7702,
+      "score": 0.7702,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\68532_MV.wav"
+    },
+    {
+      "patient_id": "50354",
+      "valve": "TV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7705,
+      "prob_abnormal": 0.2295,
+      "confidence": 0.7705,
+      "score": 0.7705,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50354_TV.wav"
+    },
+    {
+      "patient_id": "84884",
+      "valve": "PV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.5699,
+      "prob_abnormal": 0.4301,
+      "confidence": 0.4301,
+      "score": 0.5699,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\84884_PV.wav"
+    },
+    {
+      "patient_id": "50255",
+      "valve": "MV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7935,
+      "prob_abnormal": 0.2065,
+      "confidence": 0.7935,
+      "score": 0.7935,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50255_MV.wav"
+    },
+    {
+      "patient_id": "85116",
+      "valve": "TV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7438,
+      "prob_abnormal": 0.2562,
+      "confidence": 0.7438,
+      "score": 0.7438,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85116_TV.wav"
+    },
+    {
+      "patient_id": "84750",
+      "valve": "PV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6068,
+      "prob_abnormal": 0.3932,
+      "confidence": 0.3932,
+      "score": 0.6068,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\84750_PV.wav"
+    },
+    {
+      "patient_id": "50074",
+      "valve": "AV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6855,
+      "prob_abnormal": 0.3145,
+      "confidence": 0.3145,
+      "score": 0.6855,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50074_AV.wav"
+    },
+    {
+      "patient_id": "85136",
+      "valve": "PV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6987,
+      "prob_abnormal": 0.3013,
+      "confidence": 0.3013,
+      "score": 0.6987,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85136_PV.wav"
+    },
+    {
+      "patient_id": "84751",
+      "valve": "PV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7205,
+      "prob_abnormal": 0.2795,
+      "confidence": 0.7205,
+      "score": 0.7205,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\84751_PV.wav"
+    },
+    {
+      "patient_id": "50762",
+      "valve": "TV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6572,
+      "prob_abnormal": 0.3428,
+      "confidence": 0.3428,
+      "score": 0.6572,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50762_TV.wav"
+    },
+    {
+      "patient_id": "68213",
+      "valve": "TV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.5646,
+      "prob_abnormal": 0.4354,
+      "confidence": 0.4354,
+      "score": 0.5646,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\68213_TV.wav"
+    },
+    {
+      "patient_id": "39043",
+      "valve": "AV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7706,
+      "prob_abnormal": 0.2294,
+      "confidence": 0.7706,
+      "score": 0.7706,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\39043_AV.wav"
+    },
+    {
+      "patient_id": "85124",
+      "valve": "PV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6532,
+      "prob_abnormal": 0.3468,
+      "confidence": 0.3468,
+      "score": 0.6532,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85124_PV.wav"
+    },
+    {
+      "patient_id": "49627",
+      "valve": "TV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.8164,
+      "prob_abnormal": 0.1836,
+      "confidence": 0.8164,
+      "score": 0.8164,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\49627_TV.wav"
+    },
+    {
+      "patient_id": "84764",
+      "valve": "AV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.645,
+      "prob_abnormal": 0.355,
+      "confidence": 0.355,
+      "score": 0.645,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\84764_AV.wav"
+    },
+    {
+      "patient_id": "50222",
+      "valve": "TV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6752,
+      "prob_abnormal": 0.3248,
+      "confidence": 0.3248,
+      "score": 0.6752,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50222_TV.wav"
+    },
+    {
+      "patient_id": "68752",
+      "valve": "MV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6779,
+      "prob_abnormal": 0.3221,
+      "confidence": 0.3221,
+      "score": 0.6779,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\68752_MV.wav"
+    },
+    {
+      "patient_id": "57706",
+      "valve": "MV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7305,
+      "prob_abnormal": 0.2695,
+      "confidence": 0.7305,
+      "score": 0.7305,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\57706_MV.wav"
+    },
+    {
+      "patient_id": "50669",
+      "valve": "TV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6616,
+      "prob_abnormal": 0.3384,
+      "confidence": 0.3384,
+      "score": 0.6616,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50669_TV.wav"
+    },
+    {
+      "patient_id": "69129",
+      "valve": "AV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.8541,
+      "prob_abnormal": 0.1459,
+      "confidence": 0.8541,
+      "score": 0.8541,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\69129_AV.wav"
+    },
+    {
+      "patient_id": "50109",
+      "valve": "TV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6839,
+      "prob_abnormal": 0.3161,
+      "confidence": 0.3161,
+      "score": 0.6839,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50109_TV.wav"
+    },
+    {
+      "patient_id": "24160",
+      "valve": "PV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7638,
+      "prob_abnormal": 0.2362,
+      "confidence": 0.7638,
+      "score": 0.7638,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\24160_PV.wav"
+    },
+    {
+      "patient_id": "85299",
+      "valve": "MV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.5,
+      "prob_abnormal": 0.5,
+      "confidence": 0.5,
+      "score": 0.5,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85299_MV.wav"
+    },
+    {
+      "patient_id": "84852",
+      "valve": "AV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.7059,
+      "prob_abnormal": 0.2941,
+      "confidence": 0.2941,
+      "score": 0.7059,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\84852_AV.wav"
+    },
+    {
+      "patient_id": "72283",
+      "valve": "TV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.824,
+      "prob_abnormal": 0.176,
+      "confidence": 0.824,
+      "score": 0.824,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\72283_TV.wav"
+    },
+    {
+      "patient_id": "50233",
+      "valve": "PV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.8027,
+      "prob_abnormal": 0.1973,
+      "confidence": 0.8027,
+      "score": 0.8027,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50233_PV.wav"
+    },
+    {
+      "patient_id": "84761",
+      "valve": "PV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.7064,
+      "prob_abnormal": 0.2936,
+      "confidence": 0.2936,
+      "score": 0.7064,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\84761_PV.wav"
+    },
+    {
+      "patient_id": "84805",
+      "valve": "AV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6365,
+      "prob_abnormal": 0.3635,
+      "confidence": 0.3635,
+      "score": 0.6365,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\84805_AV.wav"
+    },
+    {
+      "patient_id": "49993",
+      "valve": "PV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.5389,
+      "prob_abnormal": 0.4611,
+      "confidence": 0.4611,
+      "score": 0.5389,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\49993_PV.wav"
+    },
+    {
+      "patient_id": "50239",
+      "valve": "MV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.599,
+      "prob_abnormal": 0.401,
+      "confidence": 0.401,
+      "score": 0.599,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50239_MV.wav"
+    },
+    {
+      "patient_id": "85079",
+      "valve": "AV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7598,
+      "prob_abnormal": 0.2402,
+      "confidence": 0.7598,
+      "score": 0.7598,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85079_AV.wav"
+    },
+    {
+      "patient_id": "84856",
+      "valve": "TV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7849,
+      "prob_abnormal": 0.2151,
+      "confidence": 0.7849,
+      "score": 0.7849,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\84856_TV.wav"
+    },
+    {
+      "patient_id": "50784",
+      "valve": "PV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6749,
+      "prob_abnormal": 0.3251,
+      "confidence": 0.3251,
+      "score": 0.6749,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50784_PV.wav"
+    },
+    {
+      "patient_id": "85136",
+      "valve": "AV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.5331,
+      "prob_abnormal": 0.4669,
+      "confidence": 0.4669,
+      "score": 0.5331,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85136_AV.wav"
+    },
+    {
+      "patient_id": "84692",
+      "valve": "TV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.727,
+      "prob_abnormal": 0.273,
+      "confidence": 0.727,
+      "score": 0.727,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\84692_TV.wav"
+    },
+    {
+      "patient_id": "84996",
+      "valve": "AV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7702,
+      "prob_abnormal": 0.2298,
+      "confidence": 0.7702,
+      "score": 0.7702,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\84996_AV.wav"
+    },
+    {
+      "patient_id": "50734",
+      "valve": "AV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7738,
+      "prob_abnormal": 0.2262,
+      "confidence": 0.7738,
+      "score": 0.7738,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50734_AV.wav"
+    },
+    {
+      "patient_id": "85239",
+      "valve": "TV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7564,
+      "prob_abnormal": 0.2436,
+      "confidence": 0.7564,
+      "score": 0.7564,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85239_TV.wav"
+    },
+    {
+      "patient_id": "85246",
+      "valve": "TV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6754,
+      "prob_abnormal": 0.3246,
+      "confidence": 0.3246,
+      "score": 0.6754,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85246_TV.wav"
+    },
+    {
+      "patient_id": "84996",
+      "valve": "TV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7492,
+      "prob_abnormal": 0.2508,
+      "confidence": 0.7492,
+      "score": 0.7492,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\84996_TV.wav"
+    },
+    {
+      "patient_id": "50665",
+      "valve": "PV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.78,
+      "prob_abnormal": 0.22,
+      "confidence": 0.78,
+      "score": 0.78,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50665_PV.wav"
+    },
+    {
+      "patient_id": "74417",
+      "valve": "AV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7603,
+      "prob_abnormal": 0.2397,
+      "confidence": 0.7603,
+      "score": 0.7603,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\74417_AV.wav"
+    },
+    {
+      "patient_id": "85329",
+      "valve": "MV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.5658,
+      "prob_abnormal": 0.4342,
+      "confidence": 0.4342,
+      "score": 0.5658,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85329_MV.wav"
+    },
+    {
+      "patient_id": "50314",
+      "valve": "PV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7689,
+      "prob_abnormal": 0.2311,
+      "confidence": 0.7689,
+      "score": 0.7689,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\50314_PV.wav"
+    },
+    {
+      "patient_id": "85127",
+      "valve": "PV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7619,
+      "prob_abnormal": 0.2381,
+      "confidence": 0.7619,
+      "score": 0.7619,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85127_PV.wav"
+    },
+    {
+      "patient_id": "85148",
+      "valve": "PV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6187,
+      "prob_abnormal": 0.3813,
+      "confidence": 0.3813,
+      "score": 0.6187,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85148_PV.wav"
+    },
+    {
+      "patient_id": "49808",
+      "valve": "MV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.6455,
+      "prob_abnormal": 0.3545,
+      "confidence": 0.3545,
+      "score": 0.6455,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\49808_MV.wav"
+    },
+    {
+      "patient_id": "85080",
+      "valve": "PV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.765,
+      "prob_abnormal": 0.235,
+      "confidence": 0.765,
+      "score": 0.765,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85080_PV.wav"
+    },
+    {
+      "patient_id": "85081",
+      "valve": "AV",
+      "truth": "Abnormal",
+      "pred": "Normal",
+      "prob_normal": 0.7722,
+      "prob_abnormal": 0.2278,
+      "confidence": 0.7722,
+      "score": 0.7722,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85081_AV.wav"
+    },
+    {
+      "patient_id": "85000",
+      "valve": "MV",
+      "truth": "Normal",
+      "pred": "Abnormal",
+      "prob_normal": 0.7005,
+      "prob_abnormal": 0.2995,
+      "confidence": 0.2995,
+      "score": 0.7005,
+      "wav": "E:\\Taneja's Research\\training-2022\\training-2022\\85000_MV.wav"
+    }
+  ]
+}
