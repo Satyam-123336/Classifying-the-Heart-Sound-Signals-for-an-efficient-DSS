@@ -1,13 +1,3 @@
----
-title: Heart Health DSS - HHO Ensemble
-emoji: "🫀"
-colorFrom: blue
-colorTo: red
-sdk: docker
-app_file: app.py
-pinned: false
----
-
 # Heart Health DSS - Hugging Face Space API (HHO v1.0)
 
 A production-ready FastAPI service for automated heart health detection using deep learning and machine learning ensemble methods.
