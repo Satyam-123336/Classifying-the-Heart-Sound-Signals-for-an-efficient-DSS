@@ -212,7 +212,7 @@ API will be available at `http://localhost:7860`
 1. **Input Requirements**: Expects chromagram images (not raw audio)
    - Use provided audio-to-chromagram conversion (librosa + matplotlib)
 2. **Image Format**: JPEG/PNG, 224×224 recommended
-3. **Class Imbalance**: Model biased slightly toward Abnormal class (more training examples)
+3. **Class Imbalance**: Model biased slightly toward Abnormal class (more training examples), currently handled by Backend through temporary fixes (i.e., fixing and calibrating the decision threshold manually)
 4. **Single Image Inference**: Batch predictions available but require code modification
 
 ## 📚 References
@@ -252,3 +252,4 @@ For issues or questions:
 **Last Updated**: May 2, 2026  
 **Build**: hho-v1.0  
 **Status**: Production Ready ✅
+**By**: SATYAM SAMANTA & DR. KRITI TANEJA
