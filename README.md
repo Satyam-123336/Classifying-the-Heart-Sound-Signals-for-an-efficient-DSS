@@ -249,6 +249,8 @@ For issues or questions:
 
 ---
 
+**BY SATYAM SAMANTA & DR. KRITI TANEJA**                                                                                                  
 **Last Updated**: May 2, 2026  
 **Build**: hho-v1.0  
 **Status**: Production Ready ✅
+
