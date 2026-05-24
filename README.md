@@ -207,14 +207,6 @@ API will be available at `http://localhost:7860`
 | **Inference Time** | ~500ms per image |
 | **Build Tag** | hho-v1.0 |
 
-## 🚨 Known Limitations
-
-1. **Input Requirements**: Expects chromagram images (not raw audio)
-   - Use provided audio-to-chromagram conversion (librosa + matplotlib)
-2. **Image Format**: JPEG/PNG, 224×224 recommended
-3. **Class Imbalance**: Model biased slightly toward Abnormal class (more training examples)
-4. **Single Image Inference**: Batch predictions available but require code modification
-
 ## 📚 References
 
 - **PhysioNet 2022**: https://www.physionet.org/
